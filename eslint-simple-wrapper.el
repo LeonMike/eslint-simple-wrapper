@@ -39,7 +39,7 @@ MESSAGES List of messages to display into the table."
 
 (defun eslint-simple-wrapper-foreach-message (messages)
   "For each message element in hash table.  \
-MESSAGES hola."
+MESSAGES List of messages to display into the table."
   (let (
 	(value (car messages))
 	(message)
@@ -107,7 +107,6 @@ MESSAGES hola."
 	  (eslint-simple-wrapper-foreach-message messages)
 	  (eslint-simple-wrapper-draw-table messages)
 	  )
-      (message "clearing properties")
       (set-buffer originalBuffer)
       (remove-text-properties 1 (buffer-size) '(font-lock-face nil))
       (remove-text-properties 1 (buffer-size) '(help-echo nil))
@@ -115,8 +114,8 @@ MESSAGES hola."
     )
   )
 
-(defun runItSentinel (process event)
-  "Sentinel for runIt function.  \
+(defun eslint-simple-wrapper-sentinel (process event)
+  "Sentinel for eslint-simple-wrapper-check-buffer function.  \
 PROCESS.  \
 EVENT."
   (princ
@@ -150,10 +149,10 @@ EVENT."
     )
   )
 
-(defun my-eslint-check-buffer ()
-  "Execute sample command."
+(defun eslint-simple-wrapper-check-buffer ()
+  "Execute eslint to check current buffer."
   (interactive)
-  (if (derived-mode-p 'js-mode)
+  (if (derived-mode-p 'js-mode 'js2-mode)
       (progn
 	(setq originalBuffer (current-buffer))
 	(if (boundp 'eslint-simple-wrapper-node-modules-dir)
@@ -175,11 +174,12 @@ EVENT."
 			      :buffer eslint-simple-wrapper-temp
 					;:command (list executable)
 			      :command command
-			      :sentinel #'runItSentinel
+			      :sentinel #'eslint-simple-wrapper-sentinel
 			      ;; :stderr (get-buffer eslint-simple-wrapper-errors-list
 			      )
 		)
 	      )
+	  (message "please define 'eslint-simple-wrapper-node-modules-dir' variable to run eslint-simple-wrapper")
 	  )
 	)
     )
@@ -191,9 +191,9 @@ EVENT."
   "custom implemmentation for use eslint into emacs"
   :lighter " eslint-simple-wrapper"
   :keymap (let ((map (make-sparse-keymap)))
-	    (define-key map (kbd "C-x e") 'my-eslint-check-buffer)
+	    (define-key map (kbd "C-x e") 'eslint-simple-wrapper-check-buffer)
 	    map)
-  (add-hook 'after-save-hook 'my-eslint-check-buffer)
+  (add-hook 'after-save-hook 'eslint-simple-wrapper-check-buffer)
   )
 
 ;;; eslint-simple-wrapper ends here

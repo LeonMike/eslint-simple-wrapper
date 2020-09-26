@@ -98,12 +98,12 @@ MESSAGES List of messages to display into the table."
 	     (setq endColumn (gethash "endColumn" value))
 	     (setq severity  (gethash "severity"  value))
 	     (message "--------- %s @%d:%d--%d:%d. Severity: %d"
-		      message
-		      line
-		      column
-		      endLine
-		      endColumn
-		      severity)
+	     	      message
+	     	      line
+	     	      column
+	     	      endLine
+	     	      endColumn
+	     	      severity)
 	     (setq linesDiff (- endLine line))
 	     (set-buffer originalBuffer)
 	     (goto-char 0)
@@ -116,7 +116,6 @@ MESSAGES List of messages to display into the table."
 	     (setq endingPos (point))
 	     (setq underlineStyle '(:underline (:color "red" :style wave)))
 	     (put-text-property startingPos endingPos 'font-lock-face underlineStyle)
-	     ;(setq underlineStyle '(:underline (:color "red" :style wave) :help-echo "this should be a tooltip"))
 	     (put-text-property startingPos endingPos 'help-echo message)
 	     (setq value             (car remainingElements))
 	     (setq remainingElements (cdr remainingElements))
@@ -142,7 +141,9 @@ MESSAGES List of messages to display into the table."
 	     errorCount)
     (if (not (null messages))
 	(progn
-	  (eslint-simple-wrapper-foreach-message messages)
+	  (with-silent-modifications
+	    (eslint-simple-wrapper-foreach-message messages)
+	    )
 	  (eslint-simple-wrapper-draw-table messages)
 	  )
       (set-buffer "*eslint-simple-wrapper-errors-list*")

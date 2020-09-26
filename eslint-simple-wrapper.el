@@ -3,8 +3,13 @@
 
 ;;; Code:
 (require 'json)
+(require 'org-habit)
 
 (setq-default originalBuffer (current-buffer))
+
+(defun org-add-my-extra-fonts ()
+  "Add alert and overdue fonts."
+  (add-to-list 'org-font-lock-extra-keywords '("\\(%\\)\\([^\n\r\t ]+\\)\\(%\\)" (1 '(face eslint-simple-wrapper-title-face invisible t)) (2 'eslint-simple-wrapper-title-face) (3 '(face eslint-simple-wrapper-title-face invisible t))) t))
 
 (defun eslint-simple-wrapper-draw-table (messages)
   "Draw a table to display all messages.  \
@@ -17,18 +22,21 @@ MESSAGES List of messages to display into the table."
 	  (message)
 	  (line)
 	  (column)
+	  (severity)
 	  (isNotLastElement)
 	  )
-      (insert "| *position* | *message* |\n")
+      (insert "| %position% | %type% | %message% |\n")
       (insert "|-\n")
       (while (progn
-	       (setq message   (gethash "message"   value))
-	       (setq line      (number-to-string (gethash "line"      value)))
-	       (setq column    (number-to-string (gethash "column"    value)))
+	       (setq message                     (gethash "message"  value))
+	       (setq line      (number-to-string (gethash "line"     value)))
+	       (setq column    (number-to-string (gethash "column"   value)))
+	       (setq severity  (number-to-string (gethash "severity" value)))
 	       (insert
 		(concat
 		 "| [[file:" (buffer-file-name originalBuffer) "::" line "]"
 		 "[" line ":"  column"]] | "
+		 severity " | "
 		 message
 		 " |"))
 	       (setq value             (car remainingElements))
@@ -44,28 +52,17 @@ MESSAGES List of messages to display into the table."
 	       )
 	)
       (org-mode)
+
       (setq org-hide-emphasis-markers t)
-      ;; (defface eslint-simple-wrapper-list-title-face
-      ;; 	'((:foregound "green" :background "yellow"))
-      ;; 	"Face for titles in *eslint-simple-wrapper-errors-list*"
-      ;; 	:group 'org-faces
-      ;; 	)
-      ;; (add-to-list 'org-emphasis-alist
-      ;; 		   '("!" 'font-lock-face (:foreground "red")))
-      
-      ;; (defface my-face-org-keystroke
-      ;; 	'((t (:inherit shadow 
-      ;; 		       :box (:line-width -2 ;neg. in order to keep the same size of lines
-      ;; 					 :color "grey75"
-      ;; 					 :style pressed-button)))) "Face for keystrokes"
-      ;; 					 :group 'org-faces)
-      ;; ;(add-to-list 'org-emphasis-alist
-      ;; 					;		   '("%" eslint-simple-wrapper-list-title-face))
-      ;; (add-to-list 'org-emphasis-alist
-      ;; 		   (
-      ;; 		    ("%" my-face-org-keystroke)
-      ;; 		    ))
-      ;; (org-mode)
+      (add-hook 'org-font-lock-set-keywords-hook #'org-add-my-extra-fonts)
+      (defface eslint-simple-wrapper-title-face
+	'((t (:weight bold :slant italic :foreground "Blue")))
+	"Face for eslint-simple-wrapper-list-title-face"
+	:group 'org-faces
+	)
+      (add-to-list 'org-emphasis-alist
+		   '(("%" eslint-simple-wrapper-title-face)))
+      (org-mode)
       (org-cycle)
       (goto-char 0)
       (replace-regexp "|" "  ")
@@ -83,7 +80,7 @@ MESSAGES List of messages to display into the table."
 	(message)
 	(line)
 	(column)
-	(nodeType)
+	(severity)
 	(endLine)
 	(endColumn)
 	(linesDiff)
@@ -92,18 +89,21 @@ MESSAGES List of messages to display into the table."
 	(remainingElements (cdr messages))
 	(underlineStyle)
 	)
+    (princ value)
     (while (progn
 	     (setq message   (gethash "message"   value))
 	     (setq line      (gethash "line"      value))
 	     (setq column    (gethash "column"    value))
 	     (setq endLine   (gethash "endLine"   value))
 	     (setq endColumn (gethash "endColumn" value))
-	     (message "--------- %s @%d:%d--%d:%d"
+	     (setq severity  (gethash "severity"  value))
+	     (message "--------- %s @%d:%d--%d:%d. Severity: %d"
 		      message
 		      line
 		      column
 		      endLine
-		      endColumn)
+		      endColumn
+		      severity)
 	     (setq linesDiff (- endLine line))
 	     (set-buffer originalBuffer)
 	     (goto-char 0)
@@ -161,32 +161,34 @@ PROCESS.  \
 EVENT."
   (princ
    (format "Process: %s had the event '%s'\n" process event))
-  (with-current-buffer "*eslint-simple-wrapper-temp*"
-    (let* (
-	  (content (buffer-string))
-	  )
-      (let* (
-	     (json-object-type 'hash-table)
-	     (json-array-type 'list)
-	     (json-key-type 'string)
-	     (json (json-read-from-string content))
-	     )
-	(let (
-	      (remainingFiles (cdr json))
-	      (file (car json))
-	      (counter 0)
+  (condition-case nil
+      (with-current-buffer "*eslint-simple-wrapper-temp*"
+	(let* (
+	       (content (buffer-string))
+	       )
+	  (let* (
+		 (json-object-type 'hash-table)
+		 (json-array-type 'list)
+		 (json-key-type 'string)
+		 (json (json-read-from-string content))
+		 )
+	    (let (
+		  (remainingFiles (cdr json))
+		  (file (car json))
+		  (counter 0)
+		  )
+	      (while (progn
+		       (eslint-simple-wrapper-foreach-file file)
+		       (terpri)
+		       (setq file (car remainingFiles))
+		       (setq remainingElements (cdr remainingFiles))
+		       (not (null file))
+		       )
+		)
 	      )
-	  (while (progn
-		   (eslint-simple-wrapper-foreach-file file)
-		   (terpri)
-		   (setq file (car remainingFiles))
-		   (setq remainingElements (cdr remainingFiles))
-		   (not (null file))
-		   )
 	    )
 	  )
 	)
-      )
     )
   (kill-buffer "*eslint-simple-wrapper-temp*")
   )
@@ -212,7 +214,7 @@ EVENT."
 		(set-buffer "*eslint-simple-wrapper-temp*")
 		(erase-buffer)
 		(set-buffer "*eslint-simple-wrapper-temp*")
-		(make-process :name "RUN_SAMPLE"
+		(make-process :name "ESLINT_SIMPLE_WRAPPER_PROCESS"
 			      :buffer eslint-simple-wrapper-temp
 					;:command (list executable)
 			      :command command

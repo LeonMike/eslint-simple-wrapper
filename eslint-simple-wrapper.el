@@ -11,28 +11,66 @@
 MESSAGES List of messages to display into the table."
   (with-current-buffer "*eslint-simple-wrapper-errors-list*"
     (erase-buffer)
-    (org-mode)
     (let (
 	  (value             (car messages))
 	  (remainingElements (cdr messages))
 	  (message)
 	  (line)
 	  (column)
+	  (isNotLastElement)
 	  )
-      (insert "| message | position |\n")
+      (insert "| *position* | *message* |\n")
       (insert "|-\n")
       (while (progn
 	       (setq message   (gethash "message"   value))
-	       (setq line      (gethash "line"      value))
-	       (setq column    (gethash "column"    value))
-					;(insert message " | " ,line ":" ,column )
-	       (insert (concat "| " message " | " (number-to-string line) ":" (number-to-string column) " |"))
-	       (message "now writing to error-list: %s | %d:%d" message line column)
+	       (setq line      (number-to-string (gethash "line"      value)))
+	       (setq column    (number-to-string (gethash "column"    value)))
+	       (insert
+		(concat
+		 "| [[file:" (buffer-file-name originalBuffer) "::" line "]"
+		 "[" line ":"  column"]] | "
+		 message
+		 " |"))
 	       (setq value             (car remainingElements))
 	       (setq remainingElements (cdr remainingElements))
-	       (not (null value))
+	       (setq isNotLastElement (not (null value)))
+	       (if isNotLastElement
+		   (progn
+		     (insert "\n")
+		     t
+		     )
+		 nil
+		 )
 	       )
 	)
+      (org-mode)
+      (setq org-hide-emphasis-markers t)
+      ;; (defface eslint-simple-wrapper-list-title-face
+      ;; 	'((:foregound "green" :background "yellow"))
+      ;; 	"Face for titles in *eslint-simple-wrapper-errors-list*"
+      ;; 	:group 'org-faces
+      ;; 	)
+      ;; (add-to-list 'org-emphasis-alist
+      ;; 		   '("!" 'font-lock-face (:foreground "red")))
+      
+      ;; (defface my-face-org-keystroke
+      ;; 	'((t (:inherit shadow 
+      ;; 		       :box (:line-width -2 ;neg. in order to keep the same size of lines
+      ;; 					 :color "grey75"
+      ;; 					 :style pressed-button)))) "Face for keystrokes"
+      ;; 					 :group 'org-faces)
+      ;; ;(add-to-list 'org-emphasis-alist
+      ;; 					;		   '("%" eslint-simple-wrapper-list-title-face))
+      ;; (add-to-list 'org-emphasis-alist
+      ;; 		   (
+      ;; 		    ("%" my-face-org-keystroke)
+      ;; 		    ))
+      ;; (org-mode)
+      (org-cycle)
+      (goto-char 0)
+      (replace-regexp "|" "  ")
+      (goto-char 0)
+      (replace-regexp "-\\+-" "---")
       )
     )
   )
@@ -107,6 +145,9 @@ MESSAGES List of messages to display into the table."
 	  (eslint-simple-wrapper-foreach-message messages)
 	  (eslint-simple-wrapper-draw-table messages)
 	  )
+      (set-buffer "*eslint-simple-wrapper-errors-list*")
+      (erase-buffer)
+      (insert "No errors found! Good Job :D")
       (set-buffer originalBuffer)
       (remove-text-properties 1 (buffer-size) '(font-lock-face nil))
       (remove-text-properties 1 (buffer-size) '(help-echo nil))
@@ -147,6 +188,7 @@ EVENT."
 	)
       )
     )
+  (kill-buffer "*eslint-simple-wrapper-temp*")
   )
 
 (defun eslint-simple-wrapper-check-buffer ()

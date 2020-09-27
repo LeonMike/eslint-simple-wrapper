@@ -9,7 +9,10 @@
 
 (defun org-add-my-extra-fonts ()
   "Add alert and overdue fonts."
-  (add-to-list 'org-font-lock-extra-keywords '("\\(%\\)\\([^\n\r\t ]+\\)\\(%\\)" (1 '(face eslint-simple-wrapper-title-face invisible t)) (2 'eslint-simple-wrapper-title-face) (3 '(face eslint-simple-wrapper-title-face invisible t))) t))
+  (add-to-list 'org-font-lock-extra-keywords '("\\(!\\)\\([^\n\r\t ]+\\)\\(!\\)" (1 '(face eslint-simple-wrapper-fatal-face invisible t)) (2 'eslint-simple-wrapper-fatal-face) (3 '(face eslint-simple-wrapper-fatal-face invisible t))) t)
+  (add-to-list 'org-font-lock-extra-keywords '("\\(\\?\\)\\([^\n\r\t ]+\\)\\(\\?\\)" (1 '(face eslint-simple-wrapper-warning-face invisible t)) (2 'eslint-simple-wrapper-warning-face) (3 '(face eslint-simple-warning-fatal-face invisible t))) t)
+  (add-to-list 'org-font-lock-extra-keywords '("\\(%\\)\\([^\n\r\t ]+\\)\\(%\\)" (1 '(face eslint-simple-wrapper-title-face invisible t)) (2 'eslint-simple-wrapper-title-face) (3 '(face eslint-simple-wrapper-title-face invisible t))) t)
+  )
 
 (defun eslint-simple-wrapper-draw-table (messages)
   "Draw a table to display all messages.  \
@@ -28,10 +31,21 @@ MESSAGES List of messages to display into the table."
       (insert "| %position% | %type% | %message% |\n")
       (insert "|-\n")
       (while (progn
+	       (setq severity                    (gethash "severity" value))
 	       (setq message                     (gethash "message"  value))
 	       (setq line      (number-to-string (gethash "line"     value)))
 	       (setq column    (number-to-string (gethash "column"   value)))
-	       (setq severity  (number-to-string (gethash "severity" value)))
+	       (if (gethash "fatal" value)
+		   (progn
+		     (setq severity "!Fatal!")
+		     )
+		 (cond
+		  ((= severity 2) (setq severity "!Error!"))
+		  ((= severity 1) (setq severity "?Warning?"))
+		  (t (setq severity "*Unknown*"))
+		  )
+		 ;; (setq severity (number-to-string (gethash "severity" value)))
+		 )
 	       (insert
 		(concat
 		 "| [[file:" (buffer-file-name originalBuffer) "::" line "]"
@@ -52,7 +66,7 @@ MESSAGES List of messages to display into the table."
 	       )
 	)
       (org-mode)
-
+      
       (setq org-hide-emphasis-markers t)
       (add-hook 'org-font-lock-set-keywords-hook #'org-add-my-extra-fonts)
       (defface eslint-simple-wrapper-title-face
@@ -60,8 +74,22 @@ MESSAGES List of messages to display into the table."
 	"Face for eslint-simple-wrapper-list-title-face"
 	:group 'org-faces
 	)
+      (defface eslint-simple-wrapper-fatal-face
+	'((t (:weight bold :slant italic :foreground "Red")))
+	"Face for eslint-simple-wrapper-list-fatal-face"
+	:group 'org-faces
+	)
+      (defface eslint-simple-wrapper-fatal-face
+	'((t (:weight bold :slant italic :foreground "Orange")))
+	"Face for eslint-simple-wrapper-list-warning-face"
+	:group 'org-faces
+	)
       (add-to-list 'org-emphasis-alist
-		   '(("%" eslint-simple-wrapper-title-face)))
+		   '(("%" eslint-simple-wrapper-title-face)
+		     ("!" eslint-simple-wrapper-fatal-face)
+		     ("?" eslint-simple-wrapper-warning-face)
+		     )
+		   )
       (org-mode)
       (org-cycle)
       (goto-char 0)
@@ -77,6 +105,7 @@ MESSAGES List of messages to display into the table."
 MESSAGES List of messages to display into the table."
   (let (
 	(value (car messages))
+	(fatal)
 	(message)
 	(line)
 	(column)
@@ -91,32 +120,46 @@ MESSAGES List of messages to display into the table."
 	)
     (princ value)
     (while (progn
+	     (setq fatal     (gethash "fatal"     value))
 	     (setq message   (gethash "message"   value))
 	     (setq line      (gethash "line"      value))
 	     (setq column    (gethash "column"    value))
 	     (setq endLine   (gethash "endLine"   value))
 	     (setq endColumn (gethash "endColumn" value))
 	     (setq severity  (gethash "severity"  value))
-	     (message "--------- %s @%d:%d--%d:%d. Severity: %d"
-	     	      message
-	     	      line
-	     	      column
-	     	      endLine
-	     	      endColumn
-	     	      severity)
-	     (setq linesDiff (- endLine line))
 	     (set-buffer originalBuffer)
 	     (goto-char 0)
 	     (beginning-of-line line)
-	     (forward-char (- column 1))
-	     (setq startingPos (point))
-	     (goto-char 0)
-	     (beginning-of-line endLine)
-	     (forward-char (- endColumn 1))
-	     (setq endingPos (point))
 	     (setq underlineStyle '(:underline (:color "red" :style wave)))
-	     (put-text-property startingPos endingPos 'font-lock-face underlineStyle)
-	     (put-text-property startingPos endingPos 'help-echo message)
+	     (if fatal
+		 (progn
+		   (message "--------- %s @%d:%d. Fatal. Severity: %d"
+			message
+			line
+			column
+			severity)
+		   (forward-char (- column 1))
+		   (setq startingPos (point))
+		   (put-text-property startingPos (buffer-size) 'font-lock-face underlineStyle)
+		   (put-text-property startingPos (buffer-size) 'help-echo message)
+		   )
+	       (message "--------- %s @%d:%d--%d:%d. Severity: %d"
+			message
+			line
+			column
+			endLine
+			endColumn
+			severity)
+	       (setq linesDiff (- endLine line))
+	       (forward-char (- column 1))
+	       (setq startingPos (point))
+	       (goto-char 0)
+	       (beginning-of-line endLine)
+	       (forward-char (- endColumn 1))
+	       (setq endingPos (point))
+	       (put-text-property startingPos endingPos 'font-lock-face underlineStyle)
+	       (put-text-property startingPos endingPos 'help-echo message)
+	       )
 	     (setq value             (car remainingElements))
 	     (setq remainingElements (cdr remainingElements))
 	     (not (null value))

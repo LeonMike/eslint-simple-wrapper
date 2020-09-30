@@ -118,7 +118,6 @@ MESSAGES List of messages to display into the table."
 	(remainingElements (cdr messages))
 	(underlineStyle)
 	)
-    (princ value)
     (while (progn
 	     (setq fatal     (gethash "fatal"     value))
 	     (setq message   (gethash "message"   value))
@@ -134,8 +133,8 @@ MESSAGES List of messages to display into the table."
 	     ;(setq startingPos (point))
 	     (setq startingPos (line-beginning-position line))
 	     (setq underlineStyle '(:underline (:color "red" :style wave)))
-	     (princ value)
-	     (terpri)
+	     ;(princ value)
+	     ;(terpri)
 	     (if fatal
 		 (progn
 		   (message "--------- %s @%d:%d. Fatal. Severity: %d"
@@ -193,9 +192,9 @@ MESSAGES List of messages to display into the table."
          ;;(fixableWarningCount (gethash "fixableWarningCount" (car json) "-"))
          ;;(usedDeprecatedRules (gethash "usedDeprecatedRules" (car json) "-"))
          )
-    (message "%s (errorCount: %d)"
-	     filepath
-	     errorCount)
+    ;; (message "%s (errorCount: %d)"
+    ;; 	     filepath
+    ;; 	     errorCount)
     (if (not (null messages))
 	(progn
 	  (with-silent-modifications
@@ -217,8 +216,8 @@ MESSAGES List of messages to display into the table."
   "Sentinel for eslint-simple-wrapper-check-buffer function.  \
 PROCESS.  \
 EVENT."
-  (princ
-   (format "Process: %s had the event '%s'\n" process event))
+  ;(princ
+  ; (format "Process: %s had the event '%s'\n" process event))
   (condition-case nil
       (with-current-buffer "*eslint-simple-wrapper-temp*"
 	(let* (
@@ -267,7 +266,7 @@ EVENT."
 		    (eslint-simple-wrapper-temp)
 		    (eslint-simple-wrapper-errors-list)
 		    )
-		(princ command)
+		;(princ command)
 		(setq eslint-simple-wrapper-temp (get-buffer-create "*eslint-simple-wrapper-temp*"))
 		(setq eslint-simple-wrapper-errors-list (get-buffer-create "*eslint-simple-wrapper-errors-list*"))
 		(set-buffer "*eslint-simple-wrapper-temp*")

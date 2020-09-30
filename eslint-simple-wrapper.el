@@ -149,13 +149,13 @@ MESSAGES List of messages to display into the table."
 		   )
 	       (if endLine
 		   (progn
-		     (message "--------- %s @%d:%d--%d:%d. Severity: %d"
-			      message
-			      line
-			      column
-			      endLine
-			      endColumn
-			      severity)
+		     ;; (message "--------- %s @%d:%d--%d:%d. Severity: %d"
+		     ;; 	      message
+		     ;; 	      line
+		     ;; 	      column
+		     ;; 	      endLine
+		     ;; 	      endColumn
+		     ;; 	      severity)
 		     (setq linesDiff (- endLine line))
 					;(goto-char 0)
 					;(beginning-of-line endLine)

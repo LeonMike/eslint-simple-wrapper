@@ -79,7 +79,7 @@ MESSAGES List of messages to display into the table."
 	"Face for eslint-simple-wrapper-list-fatal-face"
 	:group 'org-faces
 	)
-      (defface eslint-simple-wrapper-fatal-face
+      (defface eslint-simple-wrapper-warning-face
 	'((t (:weight bold :slant italic :foreground "Orange")))
 	"Face for eslint-simple-wrapper-list-warning-face"
 	:group 'org-faces
@@ -128,9 +128,14 @@ MESSAGES List of messages to display into the table."
 	     (setq endColumn (gethash "endColumn" value))
 	     (setq severity  (gethash "severity"  value))
 	     (set-buffer originalBuffer)
-	     (goto-char 0)
-	     (beginning-of-line line)
+	     ;(goto-char 0)
+	     ;(beginning-of-line line)
+	     ;(forward-char (- column 1))
+	     ;(setq startingPos (point))
+	     (setq startingPos (line-beginning-position line))
 	     (setq underlineStyle '(:underline (:color "red" :style wave)))
+	     (princ value)
+	     (terpri)
 	     (if fatal
 		 (progn
 		   (message "--------- %s @%d:%d. Fatal. Severity: %d"
@@ -143,20 +148,29 @@ MESSAGES List of messages to display into the table."
 		   (put-text-property startingPos (buffer-size) 'font-lock-face underlineStyle)
 		   (put-text-property startingPos (buffer-size) 'help-echo message)
 		   )
-	       (message "--------- %s @%d:%d--%d:%d. Severity: %d"
-			message
-			line
-			column
-			endLine
-			endColumn
-			severity)
-	       (setq linesDiff (- endLine line))
-	       (forward-char (- column 1))
-	       (setq startingPos (point))
-	       (goto-char 0)
-	       (beginning-of-line endLine)
-	       (forward-char (- endColumn 1))
-	       (setq endingPos (point))
+	       (if endLine
+		   (progn
+		     (message "--------- %s @%d:%d--%d:%d. Severity: %d"
+			      message
+			      line
+			      column
+			      endLine
+			      endColumn
+			      severity)
+		     (setq linesDiff (- endLine line))
+					;(goto-char 0)
+					;(beginning-of-line endLine)
+					;(forward-char (- endColumn 1))
+					;(setq endingPos (point))
+		     (setq endingPos (line-beginning-position endLine))
+		     )
+		 (message "--------- %s @%d:%d. Severity: %d"
+			  message
+			  line
+			  column
+			  severity)
+		 (setq endingPos (line-end-position line))
+		 )
 	       (put-text-property startingPos endingPos 'font-lock-face underlineStyle)
 	       (put-text-property startingPos endingPos 'help-echo message)
 	       )
@@ -240,11 +254,12 @@ EVENT."
 (defun eslint-simple-wrapper-check-buffer ()
   "Execute eslint to check current buffer."
   (interactive)
-  (if (derived-mode-p 'js-mode 'js2-mode)
+  (if (derived-mode-p 'js-mode)
       (progn
 	(setq originalBuffer (current-buffer))
 	(if (boundp 'eslint-simple-wrapper-node-modules-dir)
 	    (let (
+		  (default-directory eslint-simple-wrapper-node-modules-dir)
 		  (executable (concat eslint-simple-wrapper-node-modules-dir "/.bin/eslint"))
 		  )
 	      (let (
@@ -263,7 +278,7 @@ EVENT."
 					;:command (list executable)
 			      :command command
 			      :sentinel #'eslint-simple-wrapper-sentinel
-			      ;; :stderr (get-buffer eslint-simple-wrapper-errors-list
+			      :stderr "*Messages*"
 			      )
 		)
 	      )

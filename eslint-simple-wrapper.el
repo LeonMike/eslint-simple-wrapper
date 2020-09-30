@@ -163,11 +163,11 @@ MESSAGES List of messages to display into the table."
 					;(setq endingPos (point))
 		     (setq endingPos (line-beginning-position endLine))
 		     )
-		 (message "--------- %s @%d:%d. Severity: %d"
-			  message
-			  line
-			  column
-			  severity)
+		 ;; (message "--------- %s @%d:%d. Severity: %d"
+		 ;; 	  message
+		 ;; 	  line
+		 ;; 	  column
+		 ;; 	  severity)
 		 (setq endingPos (line-end-position line))
 		 )
 	       (put-text-property startingPos endingPos 'font-lock-face underlineStyle)

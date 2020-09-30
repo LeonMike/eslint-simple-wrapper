@@ -137,11 +137,11 @@ MESSAGES List of messages to display into the table."
 	     ;(terpri)
 	     (if fatal
 		 (progn
-		   (message "--------- %s @%d:%d. Fatal. Severity: %d"
-			message
-			line
-			column
-			severity)
+		   ;; (message "--------- %s @%d:%d. Fatal. Severity: %d"
+		   ;; 	message
+		   ;; 	line
+		   ;; 	column
+		   ;; 	severity)
 		   (forward-char (- column 1))
 		   (setq startingPos (point))
 		   (put-text-property startingPos (buffer-size) 'font-lock-face underlineStyle)
